@@ -155,7 +155,7 @@ def inv_mix_columns(state: bytes):
 def add_round_key(state: bytes, word):
     pass
 
-def key_expansion(key, w):
+# def key_expansion(key, w):
     # word = bytearray(w)
     # for i in range(4):
     #     word[i] = [key[4*i], key[4*i+1], key[4*i+2], key[4*i+3]]
