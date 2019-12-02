@@ -141,11 +141,11 @@ class TestAESUtilities(unittest.TestCase):
 
     def testWordXOR(self):
         input = [1, 2, 3, 4]
-        other = [4, 3, 2, 1]
+        other = [9, 8, 7, 6]
 
         result = self.aes.word_xor(input, other)
 
-        self.assertEqual(result, [5, 1, 1, 5])
+        self.assertEqual(result, [8, 10, 4, 2])
 
     def testXMult(self):
         self.assertEqual(self.aes.xmult(80, 74), 209)
