@@ -102,3 +102,7 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# Project files
+AES_Specification.pdf
+lab1.pdf
