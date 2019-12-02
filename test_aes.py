@@ -17,14 +17,14 @@ class TestAES(unittest.TestCase):
     def testCipher(self):
         ciphertext = aes.cipher(self.plaintext, self.key)
         ciphertext2 = aes.cipher(self.plaintext2, self.key2)
-        self.assertEqual(ciphertext, self.ciphertext)
-        self.assertEqual(ciphertext2, self.ciphertext2)
+        self.assertEqual(ciphertext.hex(), self.ciphertext.hex())
+        self.assertEqual(ciphertext2.hex(), self.ciphertext2.hex())
 
     def testDecipher(self):
-        plaintext = aes.decipher(bytes.fromhex(''), self.key)
-        plaintext2 = aes.decipher(bytes.fromhex(''), self.key2)
-        self.assertEqual(plaintext, self.plaintext)
-        self.assertEqual(plaintext2, self.plaintext2)
+        plaintext = aes.decipher(self.ciphertext, self.key)
+        plaintext2 = aes.decipher(self.ciphertext2, self.key2)
+        self.assertEqual(plaintext.hex(), self.plaintext.hex())
+        self.assertEqual(plaintext2.hex(), self.plaintext2.hex())
 
     def testSubBytes(self):
         state = self.aes.sub_bytes(bytes.fromhex('00102030405060708090a0b0c0d0e0f0'))
