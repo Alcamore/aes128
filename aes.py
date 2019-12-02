@@ -52,7 +52,7 @@ def cipher(plaintext, key):
         state = a.shift_rows(state)
         state = a.mix_columns(state)
         key_start = round * a.block_size
-        key_end = (round+ 1 ) * a.block_size - 1
+        key_end = (round + 1) * a.block_size - 1
         a.add_round_key(state, key_schedule[key_start:key_end])
 
     state = a.sub_bytes(state)
@@ -311,13 +311,37 @@ class AES:
         '''
         return [x^y for x, y in zip(word, other)]
 
+def text_to_bytes(text):
+    ''' Converts utf-8 input into bytes, checking for hex encoding.
+    '''
+    try:
+        return bytes.fromhex(text)
+    except ValueError:
+        return bytes(text, 'utf-8')
+
 
 if __name__ == '__main__':
     choice = input("Type 'c' for cipher or 'd' for decipher: ")
-    text = input("Type text in hex: ")
-    key = input("Type key in hex: ")
+    text = input("Type text in hex or ascii: ")
+    key = input("Type key in hex or ascii: ")
+
+    text = text_to_bytes(key)
+    key = text_to_bytes(key)
+
 
     if choice == 'c':
-        print(cipher(text, key).hex())
+        ciphertext = '' # TODO: Move to own function
+        for i in range(0, len(text), 16):
+            ciphertext += decipher(text, key)
+
+        print(ciphertext.hex())
+
     if choice == 'd':
-        print(decipher(text, key).hex())
+        plaintext = '' # TODO: Move to own function
+        for i in range(0, len(text), 16):
+            plaintext += decipher(text, key)
+
+        if plaintext.isprintable():
+            print(plaintext)
+        else:
+            print(plaintext.hex())
