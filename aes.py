@@ -45,21 +45,31 @@ def cipher(plaintext: bytes, key: bytes):
     state = plaintext[:]
     key_schedule = a.key_expansion(key)
 
-    state = a.add_round_key(state, key_schedule[:a.key_length * 4])
+    word_size = 4
+
+    # add round key
+    round_key = key_schedule[:a.key_length * word_size]
+    state = a.add_round_key(state, round_key)
 
     for round in range(1, a.num_rounds):
         state = a.sub_bytes(state)
         state = a.shift_rows(state)
         state = a.mix_columns(state)
-        key_start = round * a.block_size * 4
-        key_end = key_start + a.key_length * 4
-        state = a.add_round_key(state, key_schedule[key_start:key_end])
+
+        # add round key
+        key_start = round * a.block_size * word_size
+        key_end = key_start + a.key_length * word_size
+        round_key = key_schedule[key_start:key_end]
+        state = a.add_round_key(state, round_key)
 
     state = a.sub_bytes(state)
     state = a.shift_rows(state)
-    key_start = a.num_rounds * a.block_size * 4
-    key_end = key_start + a.key_length * 4
-    state = a.add_round_key(state, key_schedule[key_start:key_end])
+
+    # add round key
+    key_start = a.num_rounds * a.block_size * word_size
+    key_end = key_start + a.key_length * word_size
+    round_key = key_schedule[key_start:key_end]
+    state = a.add_round_key(state, round_key)
 
     return state
 
@@ -67,23 +77,33 @@ def decipher(ciphertext: bytes, key: bytes):
     a = AES()
 
     state = ciphertext[:]
+    word_size = 4
     key_schedule = a.key_expansion(key)
 
-    key_start = a.num_rounds * a.block_size * 4
+    # add round key
+    key_start = a.num_rounds * a.block_size * word_size
     key_end = key_start + a.key_length * 4
-    state = a.add_round_key(state, key_schedule[key_start:key_end])
+    round_key = key_schedule[key_start:key_end]
+    state = a.add_round_key(state, round_key)
 
-    for round in range(a.num_rounds-1, 0, -1):
+    for round in reversed(range(1, a.num_rounds)):
         state = a.inv_shift_rows(state)
         state = a.inv_sub_bytes(state)
-        key_start = round * a.block_size * 4
-        key_end = key_start + a.key_length * 4
-        state = a.add_round_key(state, key_schedule[key_start:key_end])
+
+        # add round key
+        key_start = round * a.block_size * word_size
+        key_end = key_start + a.key_length * word_size
+        round_key = key_schedule[key_start:key_end]
+        state = a.add_round_key(state, round_key)
+
         state = a.inv_mix_columns(state)
 
     state = a.inv_shift_rows(state)
     state = a.inv_sub_bytes(state)
-    state = a.add_round_key(state, key_schedule[:a.key_length * 4])
+
+    # add round key
+    round_key = key_schedule[:a.key_length * word_size]
+    state = a.add_round_key(state, round_key)
 
     return state
 
@@ -340,23 +360,18 @@ if __name__ == '__main__':
     text = input("Type text in hex or ascii: ")
     key = input("Type key in hex or ascii: ")
 
-    text = text_to_bytes(key)
+    text = text_to_bytes(text)
     key = text_to_bytes(key)
 
-
     if choice == 'c':
-        ciphertext = '' # TODO: Move to own function
-        for i in range(0, len(text), 16):
-            ciphertext += decipher(text, key)
+        ciphertext = cipher(text, key)
 
         print(ciphertext.hex())
 
     if choice == 'd':
-        plaintext = '' # TODO: Move to own function
-        for i in range(0, len(text), 16):
-            plaintext += decipher(text, key)
+        plaintext = decipher(text, key)
 
-        if plaintext.isprintable():
-            print(plaintext)
+        if plaintext.isascii() and plaintext.decode().isprintable():
+            print(plaintext.decode())
         else:
             print(plaintext.hex())
