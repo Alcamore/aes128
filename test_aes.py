@@ -68,7 +68,7 @@ class TestAES(unittest.TestCase):
 
         result = self.aes.add_round_key(state, round_key)
 
-        self.assertEqual(bytes(result).hex(), '001f0e543c4e08596e221b0b4774311a')
+        self.assertEqual(result.hex(), '001f0e543c4e08596e221b0b4774311a')
 
 class TestAESUtilities(unittest.TestCase):
     def setUp(self):
@@ -132,20 +132,20 @@ class TestAESUtilities(unittest.TestCase):
         self.assertEqual(rotate_three_right, [1, 2, 3, 0])
 
     def testConstantWordXOR(self):
-        input = [1, 2, 3, 4]
-        constant = 42
+        input = [0xb7, 0x5a, 0x9d, 0x85]
+        constant = 0x01
 
         result = self.aes.constant_word_xor(input, constant)
 
-        self.assertEqual(result, [43, 40, 41, 46])
+        self.assertEqual(result, [0xb6, 0x5a, 0x9d, 0x85])
 
     def testWordXOR(self):
-        input = [1, 2, 3, 4]
-        other = [9, 8, 7, 6]
+        input = [0x54, 0x68, 0x61, 0x74]
+        other = [0xb6, 0x5a, 0x9d, 0x85]
 
         result = self.aes.word_xor(input, other)
 
-        self.assertEqual(result, [8, 10, 4, 2])
+        self.assertEqual(result, [0xe2, 0x32, 0xfc, 0xf1])
 
     def testXMult(self):
         self.assertEqual(self.aes.xmult(80, 74), 209)

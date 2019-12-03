@@ -39,53 +39,51 @@ _inv_sub_box = [
     [0x17, 0x2b, 0x04, 0x7e, 0xba, 0x77, 0xd6, 0x26, 0xe1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0c, 0x7d],
 ]
 
-def cipher(plaintext, key):
+def cipher(plaintext: bytes, key: bytes):
     a = AES()
 
     state = plaintext[:]
     key_schedule = a.key_expansion(key)
 
-    a.add_round_key(state, key_schedule[:a.block_size])
+    state = a.add_round_key(state, key_schedule[:a.key_length * 4])
 
-    for round in range(a.num_rounds):
+    for round in range(1, a.num_rounds):
         state = a.sub_bytes(state)
         state = a.shift_rows(state)
         state = a.mix_columns(state)
-        key_start = round * a.block_size
-        key_end = (round + 1) * a.block_size - 1
-        a.add_round_key(state, key_schedule[key_start:key_end])
+        key_start = round * a.block_size * 4
+        key_end = key_start + a.key_length * 4
+        state = a.add_round_key(state, key_schedule[key_start:key_end])
 
     state = a.sub_bytes(state)
     state = a.shift_rows(state)
-    key_start = a.num_rounds * a.block_size
-    key_end = (a.num_rounds + 1) * a.block_size - 1
-    a.add_round_key(state, key_schedule[key_start:key_end])
+    key_start = a.num_rounds * a.block_size * 4
+    key_end = key_start + a.key_length * 4
+    state = a.add_round_key(state, key_schedule[key_start:key_end])
 
     return state
 
-def decipher(ciphertext, key):
+def decipher(ciphertext: bytes, key: bytes):
     a = AES()
 
     state = ciphertext[:]
     key_schedule = a.key_expansion(key)
 
-    key_start = a.num_rounds * a.block_size
-    key_end = (a.num_rounds + 1) * a.block_size - 1
-    a.add_round_key(state, key_schedule[key_start:key_end])
+    key_start = a.num_rounds * a.block_size * 4
+    key_end = key_start + a.key_length * 4
+    state = a.add_round_key(state, key_schedule[key_start:key_end])
 
-    for round in range(a.num_rounds-1, 1, -1):
+    for round in range(a.num_rounds-1, 0, -1):
         state = a.inv_shift_rows(state)
         state = a.inv_sub_bytes(state)
-        key_start = round * a.block_size
-        key_end = (round + 1) * a.block_size - 1
-        a.add_round_key(state, key_schedule[key_start:key_end])
+        key_start = round * a.block_size * 4
+        key_end = key_start + a.key_length * 4
+        state = a.add_round_key(state, key_schedule[key_start:key_end])
         state = a.inv_mix_columns(state)
 
     state = a.inv_shift_rows(state)
     state = a.inv_sub_bytes(state)
-    key_start = a.num_rounds * a.block_size
-    key_end = (a.num_rounds + 1) * a.block_size - 1
-    a.add_round_key(state, key_schedule[key_start:key_end])
+    state = a.add_round_key(state, key_schedule[:a.key_length * 4])
 
     return state
 
@@ -98,7 +96,7 @@ class AES:
 
         # populate round constant list with powers of 2 in GF(8)
         self.round_constant = [0x1]
-        for i in range(14):
+        for i in range(self.num_rounds):
             self.round_constant.append(self.xmult(self.round_constant[i], 2))
 
     def sub_bytes(self, state):
@@ -205,23 +203,40 @@ class AES:
         for index, (col, key) in enumerate(zip(cols, keys)):
             cols[index] = [c^k for c,k in zip(col, key)]
 
-        return self.inv_make_column(cols)
+        return bytes(self.inv_make_column(cols))
 
     def key_expansion(self, key):
         '''Expands the key into a key schedule.
         '''
         schedule_size = self.block_size * (self.num_rounds + 1)
-        key_sch = bytearray(schedule_size)
-        temp = bytearray(4)
+        word_size = 4
+        key_sch = bytearray(schedule_size*word_size)
+        temp = bytearray(word_size)
 
-        for i in range(0, self.key_length, 4):
-            key_sch[i:i+4] = key[4*i:4*i+4]
+        # Initialize the key schedule with the initial key
+        key_sch[0:16] = key[:]
 
-        for i in range(self.key_length, self.block_size * self.num_rounds, 4):
-            temp = key_sch[i-1:i+3]
+        # Convert from bytes to an array of words for simplicity
+        word_sch = []
+        for i in range(0, len(key_sch), word_size):
+            word_sch += [key_sch[i:i+word_size]]
+
+        # Generate the rest of the key schedule
+        for i in range(self.key_length, len(word_sch)):
+            temp = word_sch[i-1]
             if (i % self.key_length == 0):
-                temp = self.constant_word_xor(self.sub_bytes(self.rotate(temp)), self.round_constant[i//self.key_length])
-            key_sch[i:i+4] = self.word_xor(key_sch[i-4:i], temp)
+                temp = self.rotate(temp)
+                rcon = self.round_constant[(i//self.key_length)-1]
+                temp = self.sub_bytes(temp)
+                temp = self.constant_word_xor(temp, rcon)
+
+            word_sch[i] = self.word_xor(word_sch[i-self.key_length], temp)
+
+
+        # Convert from word form back to bytes
+        for i, word in enumerate(word_sch):
+            pos = i*4
+            key_sch[pos:pos + word_size] = bytearray(word)
 
         return bytes(key_sch)
 
@@ -302,9 +317,9 @@ class AES:
         return iterable[amount:] + iterable[:amount]
 
     def constant_word_xor(self, word, constant):
-        ''' XORs a word with some constant
+        ''' XORs the first byte of a word with some constant
         '''
-        return [x^constant for x in word]
+        return self.word_xor(word, [constant, 0, 0, 0])
 
     def word_xor(self, word, other):
         ''' XORs a word with another word
