@@ -1,0 +1,23 @@
+Encrypt test 1:
+Type 'c' for cipher or 'd' for decipher: c
+Type text in hex or ascii: 00112233445566778899aabbccddeeff
+Type key in hex or ascii: 000102030405060708090a0b0c0d0e0f
+69c4e0d86a7b0430d8cdb78070b4c55a
+
+Decrypt test 1:
+Type 'c' for cipher or 'd' for decipher: d
+Type text in hex or ascii: 69c4e0d86a7b0430d8cdb78070b4c55a
+Type key in hex or ascii: 000102030405060708090a0b0c0d0e0f
+00112233445566778899aabbccddeeff
+
+Encrypt test 2:
+Type 'c' for cipher or 'd' for decipher: c
+Type text in hex or ascii: Two One Nine Two
+Type key in hex or ascii: Thats my Kung Fu
+29c3505f571420f6402299b31a02d73a
+
+Decrypt test 2:
+Type 'c' for cipher or 'd' for decipher: d
+Type text in hex or ascii: 29c3505f571420f6402299b31a02d73a
+Type key in hex or ascii: Thats my Kung Fu
+Two One Nine Two
